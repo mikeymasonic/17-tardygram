@@ -85,4 +85,19 @@ describe('grams routes', () => {
         expect(res.body).toEqual(gram);
       });
   });
+
+  it('gets the 10 grams with the most comments', async() => {
+    return request(app)
+      .get('/api/v1/grams/popular')
+      .then(res => {
+        expect(res.body).toHaveLength(10);
+        expect(res.body).toContainEqual({
+          _id: expect.any(String), 
+          user: expect.any(String), 
+          photoUrl: expect.any(String),
+          caption: expect.any(String),
+          numComments: expect.any(Number)
+        });
+      });
+  });
 });
