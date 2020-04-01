@@ -9,7 +9,7 @@ describe('auth routes', () => {
       .post('/api/v1/auth/signup')
       .send({
         username: 'Dink',
-        password: 'admin',
+        password: 'donk',
         profilePhotoUrl: 'https://placekitten.com/100/100'
       })
       .then(res => {

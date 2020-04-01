@@ -1,4 +1,4 @@
-const { getUser, getAgent, getGrams, getGram } = require('../db/data-helpers');
+const { getUser, getUsers, getAgent, getGrams, getGram, getComments } = require('../db/data-helpers');
 
 const request = require('supertest');
 const app = require('../lib/app');
@@ -10,7 +10,7 @@ describe('grams routes', () => {
     return getAgent()
       .post('/api/v1/grams')
       .send({
-        photoUrl: 'http://placekitten.com/200/200',
+        photoUrl: 'https://www.placekitten.com/200/200',
         caption: 'I\'m like a birb',
         tags: ['#birblife', '#iwunttweeds']
       })
@@ -18,7 +18,7 @@ describe('grams routes', () => {
         expect(res.body).toEqual({
           _id: expect.any(String),
           user: user._id,
-          photoUrl: 'http://placekitten.com/200/200',
+          photoUrl: 'https://www.placekitten.com/200/200',
           caption: 'I\'m like a birb',
           tags: ['#birblife', '#iwunttweeds'],
           __v: 0
@@ -38,15 +38,21 @@ describe('grams routes', () => {
   it('gets a gram by id', async() => {
     const user = await getUser({ username: 'Wootie' });
     const gram = await getGram({ user: user._id });
+    const comments = await getComments({ post: gram._id });
+    const commenters = await getUsers();
+    comments.forEach(comment => {
+      commenters.forEach(commenter => {
+        if(comment.commentBy === commenter._id) comment.commentBy = commenter;
+      });
+    });
     return getAgent()
       .get(`/api/v1/grams/${gram._id}`)
       .then(res => {
-        expect(res.body).toEqual({ ...gram, user: user });
+        expect(res.body).toEqual({ ...gram, user: user, comments });
       });
   });
 
-
-  it('updates a grams caption', async() => {
+  it('updates a grams caption if trying to update a caption', async() => {
     const user = await getUser({ username: 'Wootie' });
     const gram = await getGram({ user: user._id });
     return getAgent()
@@ -54,6 +60,19 @@ describe('grams routes', () => {
       .send({ caption: 'nooo' })
       .then(res => {
         expect(res.body).toEqual({ ...gram, caption: 'nooo' });
+      });
+  });
+
+  it('throws an error if trying to update anything other than a caption', async() => {
+    const user = await getUser({ username: 'Wootie' });
+    const gram = await getGram({ user: user._id });
+    return getAgent()
+      .patch(`/api/v1/grams/${gram._id}`)
+      .send({ photoUrl: 'https://www.placekitten.com/200/200' })
+      .then(res => {
+        expect(res.body).toEqual({      
+          'message': 'Can only update captions',
+          'status': 500 });
       });
   });
 
@@ -66,5 +85,4 @@ describe('grams routes', () => {
         expect(res.body).toEqual(gram);
       });
   });
-
 });
